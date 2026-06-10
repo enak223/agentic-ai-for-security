@@ -1,0 +1,196 @@
+{
+  "name": "First wazuh agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -368,
+        -208
+      ],
+      "id": "ead05cf3-f99a-4a48-8f11-b3607732518f",
+      "name": "When chat message received",
+      "webhookId": "c7b08b5a-90e3-4b45-a3c3-8e923f5601f2"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a Wazuh Security Operations Expert Assistant. Your job is to query the Wazuh Indexer using the HTTP tool, retrieve alerts based on user filters, and summarize them using Gemini. Always use live data, never invent alerts.\n\nMap Wazuh rule levels to severity as follows: 0-3 = Low, 4-7 = Medium, 8-11 = High, 12-15 = Critical. Summaries should include total alerts, severity breakdown, top rules, affected agents, notable findings, and recommended actions. Prioritize Critical and High alerts, authentication failures, malware, brute force attempts, and unusual activity. If no alerts match, state that clearly. Keep summaries concise and security-focused."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -128,
+        -240
+      ],
+      "id": "1cbbb178-6b90-442f-9c53-65bdcefb7291",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -272,
+        0
+      ],
+      "id": "13825abe-c4ac-4e8e-a573-017518f47fa2",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xAGFQjPuBBJnWwr5",
+          "name": "Gemini Api cred"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -128,
+        0
+      ],
+      "id": "8b03b015-3ce4-4b92-9fda-8da1533a1d2c",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {}
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGeminiTool",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        0
+      ],
+      "id": "26ab2cae-d418-46ef-b0ec-98aadedc5039",
+      "name": "Message a model in Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xAGFQjPuBBJnWwr5",
+          "name": "Gemini Api cred"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://single-node-wazuh.indexer-1:9200/wazuh-alerts-4.x-*/_search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"size\": {{ $fromAI(\"NumAlerts\", \"The number of alerts to retrieve from indexer\", number, 10)}},\n  \"sort\": [{ \"@timestamp\": { \"order\": \"desc\" } }],\n  \"_source\": [\n    \"@timestamp\",\n    \"agent.id\",\n    \"agent.name\",\n    \"rule.id\",\n    \"rule.level\",\n    \"rule.description\",\n    \"full_log\"\n  ]\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "93f10297-c74b-42b0-9788-930213fcda88",
+      "name": "HTTP Request get last alerts from indexer",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jHxMtVXQj42j1krY",
+          "name": "wazuh indexer cred"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model in Google Gemini": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request get last alerts from indexer": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e7b539dc-550f-41d8-9f27-0cabbb16827d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2a2c072b2544679c21e34728aea326ae943580ea095f9845a1269124b81e2ae7"
+  },
+  "nodeGroups": [],
+  "id": "REhpPygR54t9AJFv",
+  "tags": []
+}
