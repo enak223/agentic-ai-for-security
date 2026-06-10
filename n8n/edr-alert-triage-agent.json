@@ -1,0 +1,197 @@
+{
+  "name": "Alert triage agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -368,
+        -208
+      ],
+      "id": "ae1a7c8b-08a1-48e9-a27a-a1281941179e",
+      "name": "When chat message received",
+      "webhookId": "f0393a4e-adb2-4c7f-b9d4-620aad968403"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a Wazuh Security Operations Expert Assistant. Query the Wazuh Indexer using the HTTP tool, retrieve live alerts based on user filters, and analyze, triage, and summarize the results. Never invent data and always base findings on returned alerts.\n\nMap Wazuh rule levels as follows: 0-3 Low, 4-7 Medium, 8-11 High, 12-15 Critical.\n\nClassify alerts as:\n\n* Noise: Expected behavior, false positives, or low-risk activity.\n* Review: Suspicious or unusual activity requiring validation.\n* Investigate: Activity that may indicate compromise, unauthorized access, malware, privilege escalation, lateral movement, persistence, or brute-force activity.\n\nPrioritize Critical and High alerts, authentication failures, malware detections, brute-force attempts, privilege escalation, and anomalous behavior. Correlate related alerts and identify recurring patterns when possible.\n\nProvide concise summaries including alert counts, severity distribution, notable findings, affected systems, triage classification, and recommended remediation actions. If no alerts match the query, clearly state that no matching alerts were found. Focus on helping analysts quickly determine what can be ignored, reviewed, or investigated immediately."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -128,
+        -240
+      ],
+      "id": "0235f87a-df75-4dcc-b562-a4e36b5b38ec",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -272,
+        0
+      ],
+      "id": "7e66d902-9270-4712-9d74-925714422c57",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xAGFQjPuBBJnWwr5",
+          "name": "Gemini Api cred"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -128,
+        0
+      ],
+      "id": "5e1f2738-6343-4c10-9b05-dec685c4eb99",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {}
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGeminiTool",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        0
+      ],
+      "id": "a9c0738b-2ad8-4355-be89-a2a735c52e5c",
+      "name": "Message a model in Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xAGFQjPuBBJnWwr5",
+          "name": "Gemini Api cred"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://single-node-wazuh.indexer-1:9200/wazuh-alerts-4.x-*/_search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"size\": 0,\n  \"query\": {\n    \"bool\": {\n      \"filter\": [\n        {\n          \"range\": {\n            \"@timestamp\": {\n              \"gte\": \"{{ $fromai(\"gte-timestamp\", \"Timestamp to search after, use relative timestamps if possible, ex. now-24h\", string, \"now-24h\") }}\",\n              \"lt\": \"{{ $fromai(\"lt-timestamp\", \"Timestamp to search before, use relative timestamps if possible, ex. now\", string, \"now\") }}\",\n              \"time_zone\": \"America/Denver\"\n            }\n          }\n        },\n        {\n          \"range\": {\n            \"rule.level\": {\n              \"gte\": {{ $fromai(\"gte-rule-level\", \"severity level that is the lower bound of the search\", number, 0) }},\n                \"lte\": {{ $fromai(\"lte-rule-level\", \"severity level that is the upper bound of the search\", number, 15) }}            }\n          }\n        }\n      ],\n      \"must_not\": [\n        {\n          \"bool\": {\n            \"should\": [\n              { \"exists\": { \"field\": \"data.vulnerability.cve\" } }\n            ]\n          }\n        }\n      ]\n    }\n  },\n  \"aggs\": {\n    \"by_endpoint\": {\n      \"terms\": {\n        \"field\": \"agent.name\",\n        \"size\": 50,\n        \"order\": { \"_count\": \"desc\" }\n      },\n      \"aggs\": {\n        \"by_finding_title\": {\n          \"terms\": {\n            \"field\": \"rule.description\",\n            \"size\": 50,\n            \"order\": { \"_count\": \"desc\" }\n          },\n          \"aggs\": {\n            \"by_command\": {\n              \"terms\": {\n                \"field\": \"data.command\",\n                \"size\": 50,\n                \"order\": { \"_count\": \"desc\" }\n              }\n            },\n            \"by_dstuser\": {\n              \"terms\": {\n                \"field\": \"data.dstuser\",\n                \"size\": 50,\n                \"order\": { \"_count\": \"desc\" }\n              }\n            },\n            \"by_package\": {\n              \"terms\": {\n                \"field\": \"data.package\",\n                \"size\": 50,\n                \"order\": { \"_count\": \"desc\" }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "0734b566-4518-43bc-b15f-a7d410dc7139",
+      "name": "HTTP Request get last alerts from indexer",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jHxMtVXQj42j1krY",
+          "name": "wazuh indexer cred"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model in Google Gemini": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request get last alerts from indexer": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "57a798eb-fb2d-4719-8b8e-bc6ae6dc0315",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2a2c072b2544679c21e34728aea326ae943580ea095f9845a1269124b81e2ae7"
+  },
+  "nodeGroups": [],
+  "id": "GedrZXybIDHcCfza",
+  "tags": []
+}
