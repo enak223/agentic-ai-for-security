@@ -1,0 +1,8 @@
+# Log execution of SUID python3
+-a always,exit -F path=/usr/bin/python3 -F perm=x -F auid>=1000 -F auid!=4294967295 -k suid_python3
+
+# Log reads in /root directory
+-a always,exit -F dir=/root -F perm=r -F auid>=1000 -F auid!=4294967295 -k read_root
+
+# Log reads/writes/exec/attr changes to flag.txt
+-w /root/flag.txt -p rwxa -k read_flag
