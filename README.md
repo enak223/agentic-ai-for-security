@@ -373,10 +373,10 @@ Built and tested in VMware Workstation:
 
 |      VM           |      OS      |               Role                |    IP (VMnet8)     |
 |-------------------|--------------|-----------------------------------|--------------------|
-| Ubuntu AI         | Ubuntu 22.04 | Wazuh (Docker) + n8n              | <wazuh-manager-ip> |
-| Kali Linux        | Kali Linux   | Attacker — full offensive toolkit | <attacker-ip>      |
-| Ubuntu Web Server | Ubuntu 22.04 | Vulnerable web app target         | <target1-ip>       |
-| Windows 11        | Windows 11   | Endpoint — Wazuh agent + Sysmon   | <target2-ip>       |
+| Ubuntu AI         | Ubuntu 22.04 | Wazuh (Docker) + n8n              | 192.168.x.20       |
+| Kali Linux        | Kali Linux   | Attacker — full offensive toolkit | 192.168.x.130      |
+| Ubuntu Web Server | Ubuntu 22.04 | Vulnerable web app target         | 192.168.x.139      |
+| Windows 11        | Windows 11   | Endpoint — Wazuh agent + Sysmon   | 192.168.x.128      |
 
 **Useful tips:**
 - `Ctrl + Alt` — release mouse pointer from VM
