@@ -425,12 +425,22 @@ https://single-node-wazuh.indexer-1:9200/wazuh-alerts-*/_search
 
 ## 🛣️ Roadmap
 
-- [ ] Threat Hunter Agent 2.0 with memory and multi-step reasoning
-- [ ] Slack/email notification node for high-severity alerts
-- [ ] VirusTotal API integration for IOC enrichment
-- [ ] Automated response playbooks (isolate host, block IP)
-- [ ] Export threat hunt findings to MISP
-- [ ] Extend Windows Event Log coverage with custom Sysmon rules
+| Phase | Feature | Status |
+|-------|---------|--------|
+| v0.1 | Multi-VM homelab setup (Wazuh + n8n + Kali + Windows) | ✅ Complete |
+| v0.2 | Wazuh agent deployment on Linux and Windows endpoints | ✅ Complete |
+| v0.3 | Auditd rules + Sysmon telemetry integration | ✅ Complete |
+| v0.4 | Wazuh REST API exploration via Postman | ✅ Complete |
+| v0.5 | n8n AI Agent — EDR alert triage workflow | ✅ Complete |
+| v0.6 | Full attack chain execution (recon → pivot → exploit → privesc) | ✅ Complete |
+| v0.7 | AI Threat Hunter Agent 1.0 build | ✅ Complete |
+| v0.8 | LLM benchmark — Claude vs Gemini vs GPT | ✅ Complete |
+| v0.9 | Automated response playbooks (isolate host, block IP) | ✅ Complete |
+| v0.9 | Slack/email notification for high-severity alerts | ✅ Complete |
+| v1.0 | Threat Hunter Agent 2.0 with memory and multi-step reasoning | 🔲 Future |
+| v1.1 | VirusTotal API integration for IOC enrichment | 🔲 Future |
+| v1.2 | Export threat hunt findings to MISP | 🔲 Future |
+| v1.3 | GhostNet + NullByte unified risk dashboard | 🔲 Future |
 
 ---
 
@@ -451,3 +461,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 ---
 
 *Based on the Agentic AI for Security Masterclass by [Atlantium AI](https://atlantiumai.io)*
+
+---
+
+> *"The best SOC analyst isn't the one who waits for alerts — it's the one who builds the system that never sleeps."*
